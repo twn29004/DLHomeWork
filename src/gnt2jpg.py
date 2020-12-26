@@ -6,7 +6,13 @@ import struct
 
 from PIL import Image
 
-path = 'F:\TODO\深度学习课程\作业\大作业\dataset'
+# 这里是保存gnt文件的路径
+gntpath = '/home/lyc/data/twn/DLHomework/HWDB1.1'
+datapath = os.path.abspath(os.path.join(os.getcwd(), "../data"))
+if not os.path.exists(datapath):
+    os.mkdir(datapath)
+    print("新建文件夹：", datapath)
+
 writerStart = 1241
 writerEnd = 1301
 
@@ -16,7 +22,7 @@ def wordNum():
     dictionary = dict()
     cnt = 0
     for writer in range(writerStart, writerEnd):
-        ff = path + '\\HWDB1.1tst_gnt\\' + str(writer) + '-c.gnt'
+        ff = gntpath + "/" + str(writer) + '-c.gnt'
         f = open(ff, 'rb')
         while f.read(1) != "":
             cnt += 1
@@ -50,9 +56,9 @@ def wordNum():
 
 def createImage():
     # 创建存储图片的目录
-    if not os.path.exists(path + "\\image"):
-        os.mkdir(path + "\\image")
-        print("新建文件夹：", path + "\\image")
+    if not os.path.exists(datapath + "/image"):
+        os.mkdir(datapath + "/image")
+        print("新建文件夹：", datapath + "/image")
 
     # 把这30个tag作为字典的key,然后按照这里面的值来初始化,count作为文件名
     wordCount = dict()
@@ -61,7 +67,7 @@ def createImage():
         wordCount[item] = 0
 
     for z in range(writerStart, writerEnd):
-        ff = path + '\\HWDB1.1tst_gnt\\' + str(z) + '-c.gnt'
+        ff = gntpath + "/" + str(z) + '-c.gnt'
         f = open(ff, 'rb')
         print("start process {}".format(z))
         while f.read(1) != "":
@@ -95,17 +101,31 @@ def createImage():
 
             filename = str(count) + '.png'
             tag_code = str(tag_code)
-            filename = path + "\\image\\" + tag_code + '\\' + filename
-            if os.path.exists(path + "\\image\\" + tag_code):
+            filename = datapath + "/image/" + tag_code + '/' + filename
+            if os.path.exists(datapath + "/image/" + tag_code):
                 im = im.resize((32, 32))
                 im.save(filename)
             else:
-                os.makedirs(path + "\\image\\" + tag_code)
+                os.makedirs(datapath + "/image/" + tag_code)
                 im = im.resize((32, 32))
                 im.save(filename)
         f.close()
         print("writer {} has processed".format(z))
 
 
+# 生成图片标签的txt文本信息
+def labelTxt():
+    # 创建labeltxt
+    with open(datapath + "/train.txt", 'wt') as f:
+        # 获取路径下的所有文件夹名称
+        clsDicts = os.listdir(datapath + "/image")
+        for clsDict in clsDicts:
+            clsfiles = os.listdir(datapath + "/image" + "/" + clsDict)
+            for clsfile in clsfiles:
+                # "path label"
+                print("/image" + "/" + clsDict + "/" + clsfile + " " + clsDict, file=f)
+
+
 if __name__ == "__main__":
     createImage()
+    labelTxt()
