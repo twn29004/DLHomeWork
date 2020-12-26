@@ -1,25 +1,27 @@
-import torch
-from torch import nn
-from torch.autograd import Variable
+# import torch
+# from torch import nn
+# from torch.autograd import Variable
+#
+#
+# class NetG(nn.Module):
+#     def __init__(self, lenZ):
+#         super(NetG, self).__init__()
+#         self.len = lenZ
+#         self.main = nn.Sequential(
+#             nn.ConvTranspose2d(256, 128, 5, 2, 2, bias=False)
+#         )
+#
+#     def forward(self, input):
+#         return self.main(input)
+#
+#
+# # netg = NetG(128)
+# input = Variable(torch.randn(2, 2, 4, 4))
+# print(input.norm(1))
+# # out = netg(input)
+# # print(out.size())
 
+import random
 
-class NetG(nn.Module):
-    def __init__(self, lenZ):
-        super(NetG, self).__init__()
-        self.len = lenZ
-        # self.convtrav = nn.Conv2d(1, 64, 5, 2, 2, bias=False)s
-        self.main = nn.Sequential(
-            nn.Linear(4096, 30),
-            nn.Softmax(dim=1)
-        )
-
-    def forward(self, input):
-        # 首先对输入进行reshape
-        # input = input.reshape((1, self.len, 1, 1))
-        return self.main(input)
-
-
-netg = NetG(128)
-input = Variable(torch.randn(2, 4096))
-out = netg(input)
-print(out)
+tmp = random.sample(range(0, 20), 10)
+print(len(tmp))

@@ -45,7 +45,6 @@ class MyDataset(Dataset):
             if index not in self.label2index.keys():
                 self.label2index[index] = cnt
                 cnt += 1
-        print("cnt = ", cnt)
         self.imgs = imgs
         self.transform = transform
         self.target_transform = target_transform

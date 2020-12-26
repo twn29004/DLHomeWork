@@ -12,6 +12,12 @@ datapath = os.path.abspath(os.path.join(os.getcwd(), "../data"))
 if not os.path.exists(datapath):
     os.mkdir(datapath)
     print("新建文件夹：", datapath)
+else:
+    # 防止多次运行重采集
+    os.rmtree(datapath)
+    print("清空文件夹 ", datapath)
+    os.mkdir(datapath)
+    print("新建文件夹：", datapath)
 
 writerStart = 1241
 writerEnd = 1301
@@ -51,6 +57,7 @@ def wordNum():
     wordbag = set()
     for index in indexs:
         wordbag.add(tmp[index][0])
+    print("the len of wordbag is {}".format(len(wordbag)))
     return wordbag
 
 
@@ -124,8 +131,10 @@ def labelTxt():
             for clsfile in clsfiles:
                 # "path label"
                 print("/image" + "/" + clsDict + "/" + clsfile + " " + clsDict, file=f)
+        print(len(clsDicts))
 
 
 if __name__ == "__main__":
+    # wordNum()
     createImage()
     labelTxt()
