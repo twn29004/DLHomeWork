@@ -21,7 +21,7 @@
 # # out = netg(input)
 # # print(out.size())
 
-import random
+import torch
 
-tmp = random.sample(range(0, 20), 10)
-print(len(tmp))
+alpha = torch.rand(64, 1)
+print(alpha.size())
