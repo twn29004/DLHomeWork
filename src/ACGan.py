@@ -12,7 +12,7 @@ from torchvision.utils import save_image
 os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--n_epochs", type=int, default=2, help="number of epochs of training")
+parser.add_argument("--n_epochs", type=int, default=400, help="number of epochs of training")
 parser.add_argument("--n_Depochs", type=int, default=5, help="number of epochs of training Discriminator")
 parser.add_argument("--batch_size", type=int, default=64, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
@@ -27,6 +27,7 @@ parser.add_argument("--sample_interval", type=int, default=400, help="interval b
 opt = parser.parse_args()
 print(opt)
 
+torch.cuda.set_device(1)
 cuda = True if torch.cuda.is_available() else False
 
 
@@ -101,9 +102,7 @@ class Discriminator(nn.Module):
     def forward(self, img):
         out = self.conv_blocks(img)
         # 经过conv_locks之后将输出结果转化为一维向量
-        print("变化前", out.size())
         out = out.view(out.shape[0], -1)
-        print("变化后", out.size())
         # 对这个一维向量分别输入两个线性层，一个是预测真假，一个是预测属于某个类别的概率
         validity = self.adv_layer(out)
         label = self.aux_layer(out)
@@ -218,6 +217,4 @@ for epoch in range(opt.n_epochs):
             "[Epoch %d/%d] [Batch %d/%d] [D loss: %f, acc: %d%%] [G loss: %f]"
             % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), 100 * d_acc, g_loss.item())
         )
-        batches_done = epoch * len(dataloader) + i
-        if batches_done % opt.sample_interval == 0:
-            sample_image(n_row=10, batches_done=batches_done)
+    sample_image(n_row=10, batches_done=epoch)

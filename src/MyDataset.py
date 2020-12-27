@@ -20,7 +20,7 @@ def default_loader(path):
 default_transform = transforms.Compose([
     transforms.CenterCrop((32, 32)),
     transforms.ToTensor(),
-    transforms.Normalize((0.5), (0.5)),
+    transforms.Normalize((0.5,), (0.5,)),
 ])
 
 
