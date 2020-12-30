@@ -4,16 +4,15 @@ import numpy as np
 import torch
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
-from MyDataset import MyDataset
 from torch.autograd import Variable
 from torch.utils.data import Dataset
-from torchvision.utils import save_image
 
+from MyDataset import MyDataset
 from Modules import *
 
-GAMA = 1
-LAMBDA = 10
-THETA = 1
+GAMA = 1    # 结构性损失的参数
+LAMBDA = 10   # GP的参数
+THETA = 1       # 特征匹配的参数
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--dataset", default="HW", help="dataset of train")
@@ -85,52 +84,75 @@ for epoch in range(opt.n_epochs):
         batch_size = imgs.shape[0]
         valid = Variable(FloatTensor(batch_size, 1).fill_(1.0), requires_grad=False)
         fake = Variable(FloatTensor(batch_size, 1).fill_(0.0), requires_grad=False)
+
+        optimizer_D.zero_grad()
         real_imgs = Variable(imgs.type(FloatTensor))
         labels = Variable(labels.type(LongTensor))
+
+        # 生成噪音和随机标签
         z = Variable(FloatTensor(np.random.normal(0, 1, (batch_size, opt.latent_dim))))
         gen_labels = Variable(LongTensor(np.random.randint(0, opt.n_classes, batch_size)))
 
+        # 根据噪音和随机标签生成假图像
         gen_imgs = generator(z, gen_labels)
-        # 准备好数据之后开始训练
-        optimizer_D.zero_grad()
+        # 将真假图片输入判别器并获得相应得分数
         real_pred, real_aux, real_conv = discriminator(real_imgs)
         fake_pred, fake_aux, fake_conv = discriminator(gen_imgs.detach())
-        # 这个越小表示判别器辨别真假的能力越强
+        # 使得真假得值向应属于他们得值靠近，即真图片向1靠近，假图片像0靠近
         loss_cgan = adversarial_loss(real_pred, valid) + adversarial_loss(fake_pred, fake)
+
+        # 注意这里label讲道理只应让真图片得预测标签项真标签靠近就好了，不需要假图片的标签也向其标签靠近吧
+        # 另一种解释是不管真假，判别器应该让标签尽可能的对
         loss_label = auxiliary_loss(real_aux, labels) + auxiliary_loss(fake_aux, gen_labels)
+
         # 这个值越小，说明真假数分布的越像，所以在判别器中，要区分真假数据应尽可能使他们大
+        # 但是这个真假数据并不是同一个标签的，感觉这种不是很有意义的样子
         loss_ofm = 0
         for index in range(len(real_conv)):
             loss_ofm += (real_conv[index] - fake_conv[index]).norm(1)
+        # 这个的目的是让这项损失小一点，不然他在损失项中的比例太大了
+        loss_ofm /= (32 ** 3)
+
+        # 梯度损失，在原论文的代码中，这项是加的，意思就是这项越小越好
         GP = calc_gradient_penalty(discriminator, real_imgs.data, gen_imgs.data)
 
         # 计算判别器的损失，尽可能的分别出真假数据。
-        loss_d = loss_cgan + loss_label + LAMBDA * GP - THETA * loss_ofm / (3 * 32 ** 4)
+        # print("loss_cgan = {}, loss_label = {}, GP = {}".format(loss_cgan.item(), loss_label.item(), GP))
+        loss_d = loss_cgan + loss_label + LAMBDA * GP
         loss_d.backward()
         d_loss = loss_d.item()
         optimizer_D.step()
-        # 开始训练
-
         # 每5次训练一下生成器
         if j % 5 == 0:
             optimizer_G.zero_grad()
-            # Generate a batch of images
-            gen_imgs = generator(z, gen_labels)
+            # 根据真实标签生成图片，让生成的图片的数据分布尽可能向真实数据靠，这样ofm才有意义的柑橘
+            gen_imgs = generator(z, labels)
             fake_pred, fake_aux, fake_conv = discriminator(gen_imgs)
             real_pred, real_aux, real_conv = discriminator(real_imgs)
+
             # 需要的是缩小判别器对生成的假数据与真实值之间的差距
             loss_cgan = adversarial_loss(fake_pred, valid)
+            # 生成的加图片的预测的标签尽可能的向真图片靠
             loss_label = auxiliary_loss(fake_aux, gen_labels)
             loss_ofm = 0
             for index in range(len(real_conv)):
                 loss_ofm += (real_conv[index] - fake_conv[index]).norm(1)
             # loss表示的是生成器欺骗判别器的能力
-            loss_consis = (real_imgs - gen_imgs).norm(1)
+            loss_ofm /= (32 ** 3)
+            # 图片的一致性损失
+            loss_consis = (real_imgs - gen_imgs).norm(1) / (32 ** 4)
             # 这个损失减小，说明对生成的假数据与生成的标签
-            loss_g = loss_cgan + loss_label + GAMA * loss_consis / (32 ** 3 * 3) + THETA * loss_ofm / (3 * 32 ** 4)
+            # print("loss_cgan = {}, loss_label = {}, loss_consis = {}, loss_ofm = {}"
+            #       .format(loss_cgan.item(), loss_label.item(), loss_consis.item(), loss_ofm.item()))
+            loss_g = loss_cgan + loss_label + GAMA * loss_consis + THETA * loss_ofm
             loss_g.backward()
             g_loss = loss_g.item()
             optimizer_G.step()
+    with open("train_mnist.txt", 'wt') as f:
+        print(
+            "[Epoch %d/%d] [D loss: %f] [G loss: %f]"
+            % (epoch, opt.n_epochs, d_loss, g_loss), file=f
+        )
     print(
         "[Epoch %d/%d] [D loss: %f] [G loss: %f]"
         % (epoch, opt.n_epochs, d_loss, g_loss)

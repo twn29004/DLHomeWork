@@ -153,9 +153,6 @@ def sample_image(n_row, batches_done):
     save_image(gen_imgs.data, "images/%d.png" % batches_done, nrow=n_row, normalize=True)
 
 
-# ----------
-#  Training
-# ----------
 
 for epoch in range(opt.n_epochs):
     for i, (imgs, labels) in enumerate(dataloader, 0):

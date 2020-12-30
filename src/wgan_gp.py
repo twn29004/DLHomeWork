@@ -143,11 +143,6 @@ for epoch in range(opt.n_epochs):
 
         # Configure input
         real_imgs = Variable(imgs.type(Tensor))
-
-        # ---------------------
-        #  Train Discriminator
-        # ---------------------
-
         optimizer_D.zero_grad()
 
         # Sample noise as generator input
